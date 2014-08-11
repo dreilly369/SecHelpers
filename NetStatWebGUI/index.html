@@ -1,0 +1,183 @@
+<html>
+    <head>
+        <style>
+            #map_canvas {
+                width: 900px;
+                height: 600px;
+            }
+        </style>
+        <script src="https://maps.googleapis.com/maps/api/js"></script>
+        <script>
+
+            function initialize() {
+                var url = "objects/locateIp.php";
+                //Get the config from PHP
+                var configClient = new XMLHttpRequest();
+                var conf;
+                configClient.open("GET", url + '?conf=1', false);
+                configClient.setRequestHeader("Content-Type", "text/plain");
+                configClient.send("conf");
+                if (configClient.status == 200) {
+                    conf = JSON.parse(configClient.responseText);
+                } else {
+                    alert("The request did not succeed!\n\nThe response status was: " + configClient.status + " " + client.statusText + ".");
+                }
+
+                var homeCoords = new google.maps.LatLng(conf.home_latitude, conf.home_longitude);//Mark the configured starting location
+
+                //Get the connection details from the server
+                var representationOfDesiredState = "The cheese is old and moldy";
+                var ipData;
+                var client = new XMLHttpRequest();
+                client.open("GET", url, false);
+                client.setRequestHeader("Content-Type", "text/plain");
+                client.send(representationOfDesiredState);
+                if (client.status == 200) {
+                    ipData = JSON.parse(client.responseText);
+                    console.log(ipData);
+                } else {
+                    alert("The request did not succeed!\n\nThe response status was: " + client.status + " " + client.statusText + ".");
+                }
+
+                var mapOptions = {
+                    zoom: 3,
+                    center: homeCoords,
+                    mapTypeId: google.maps.MapTypeId.TERRAIN
+                };
+                //Set up the map display
+                var map = new google.maps.Map(document.getElementById('map_canvas'),
+                        mapOptions);
+                map.set('styles', [
+                    {
+                        featureType: 'road',
+                        elementType: 'labels',
+                        stylers: [
+                            {saturation: -100},
+                            {invert_lightness: true}
+                        ]
+                    }, {
+                        featureType: "road.arterial",
+                        elementType: "geometry",
+                        stylers: [
+                            {color: "#0000FF"},
+                            {saturation: 50}
+                        ]
+                    }, {
+                        featureType: 'water',
+                        elementType: 'geometry',
+                        stylers: [
+                            {color: '#000000'},
+                            {saturation: -100}
+                        ]
+                    }, {
+                        featureType: 'landscape',
+                        elementType: 'geometry',
+                        stylers: [
+                            {color: '#007700'}
+                        ]
+                    }
+
+                ]);
+                
+                //Add the initial marker
+                var marker = new google.maps.Marker({
+                    position: homeCoords,
+                    map: map,
+                    title: 'Tortuga!'
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    map.setZoom(8);
+                    map.setCenter(marker.getPosition());
+                });
+
+                ipData.connections.forEach(function(entry) {
+                    //console.log(entry.foreign_address + "\n\n");
+                    var ip2 = entry.foreign_address;
+                    var lat = entry.latitude;
+                    var lng = entry.longitude;
+                    var secondCoords = new google.maps.LatLng(lat, lng);
+                    var ipPathCoordinates = [
+                        homeCoords,
+                        secondCoords
+                    ];
+                    var flightPath = new google.maps.Polyline({
+                        path: ipPathCoordinates,
+                        geodesic: true,
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+
+                    var marker2 = new google.maps.Marker({
+                        position: secondCoords,
+                        map: map,
+                        title: ip2
+                    });
+
+                    var foreignContentString = '<div id="content" style="height:200px">' +
+                            '<table>' +
+                            '<th>Connection Details for: '+entry.foreign_address+'</th>' +
+                            '<tr>' +
+                            '<td>ISP</td>' +
+                            '<td>' + entry.isp + '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>Local Port</td>' +
+                            '<td>' + entry.local_port + '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>Foreign Port</td>' +
+                            '<td>' + entry.foreign_port + '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td>State</td>' +
+                            '<td>' + entry.state + '</td>' +
+                            '</tr>' +
+                            '</table>' +
+                            '</div>';
+                    //Set up the info window for each foreign connection
+                    var infowindow = new google.maps.InfoWindow({
+                        content: foreignContentString
+                    });
+
+                    //clear the contents of the infwindow on closeclick
+                    google.maps.event.addListener(infowindow, 'closeclick', function() {
+                        infowindow.setContent('');
+                        map.setZoom(3);
+                    });
+
+                    google.maps.event.addListener(marker2, 'click', function() {
+                        //when the infowindow is open, close it an clear the contents
+                        if (foreignContentString === infowindow.getContent())
+                        {
+                            infowindow.close(map, marker2);
+                            infowindow.setContent('');
+                            
+                        }
+                        //otherwise open the infowindow
+                        else
+                        {
+                            map.setZoom(8);
+                            map.setCenter(marker2.getPosition());
+                            //open the infowindow when it's not open yet
+                            if (foreignContentString !== infowindow.getContent())
+                            {
+                                infowindow.setContent(foreignContentString);
+                                infowindow.open(map, marker2);
+                            }
+                        }
+                    });
+
+                    flightPath.setMap(map);
+                });
+            }
+
+            google.maps.event.addDomListener(window, 'load', initialize);
+             var myVar = setInterval(initialize, 10000);
+        </script>
+    </head>
+    <body>
+        <div id="map_canvas"></div>
+    </body>
+</html>
