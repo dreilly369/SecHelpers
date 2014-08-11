@@ -144,7 +144,6 @@
                     //clear the contents of the infwindow on closeclick
                     google.maps.event.addListener(infowindow, 'closeclick', function() {
                         infowindow.setContent('');
-                        map.setZoom(3);
                     });
 
                     google.maps.event.addListener(marker2, 'click', function() {
@@ -174,7 +173,8 @@
             }
 
             google.maps.event.addDomListener(window, 'load', initialize);
-             var myVar = setInterval(initialize, 10000);
+            var timepause = 1000 * 120;
+            var myVar = setInterval(initialize, timepause);
         </script>
     </head>
     <body>
