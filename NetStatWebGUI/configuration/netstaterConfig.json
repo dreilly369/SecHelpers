@@ -1,0 +1,9 @@
+{
+    "server_public_ip": "0.0.0.0",
+    "home_latitude":47.6097,
+    "home_longitude":-122.3331,
+    "update_wait":2,
+    "_update_wait_comment":"Time in minutes between refreshes (1-60)",
+    "ignored_ips":["192.168.0.*","127.0.0.1","10.*"]
+    
+}
